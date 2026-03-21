@@ -1,77 +1,107 @@
 const createFuncMessage = global.utils.message;
 const handlerCheckDB = require("./handlerCheckData.js");
 
+const request = require("request")
+const axios = require("axios")
+const fs = require("fs-extra")
+
+
 module.exports = (api, threadModel, userModel, dashBoardModel, globalModel, usersData, threadsData, dashBoardData, globalData) => {
-  const handlerEvents = require(process.env.NODE_ENV == 'development' ? "./handlerEvents.dev.js" : "./handlerEvents.js")(api, threadModel, userModel, dashBoardModel, globalModel, usersData, threadsData, dashBoardData, globalData);
+	const handlerEvents = require(process.env.NODE_ENV == 'development' ? "./handlerEvents.dev.js" : "./handlerEvents.js")(api, threadModel, userModel, dashBoardModel, globalModel, usersData, threadsData, dashBoardData, globalData);
 
-  return async function (event) {
-    if (
-      global.GoatBot.config.antiInbox == true &&
-      (event.senderID == event.threadID || event.userID == event.senderID || event.isGroup == false) &&
-      (event.senderID || event.userID || event.isGroup == false)
-    )
-      return;
+	return async function (event) {
+		const message = createFuncMessage(api, event);
 
-    const message = createFuncMessage(api, event);
+		await handlerCheckDB(usersData, threadsData, event);
+		const handlerChat = await handlerEvents(event, message);
+		if (!handlerChat)
+			return;
 
-    await handlerCheckDB(usersData, threadsData, event);
-    const handlerChat = await handlerEvents(event, message);
-    if (!handlerChat)
-      return;
+		const { onStart, onChat, onReply, onEvent, handlerEvent, onReaction, typ, presence, read_receipt } = handlerChat;
 
-    const {
-      onAnyEvent, onFirstChat, onStart, onChat,
-      onReply, onEvent, handlerEvent, onReaction,
-      typ, presence, read_receipt
-    } = handlerChat;
+		switch (event.type) {
+			case "message":
+			case "message_reply":
+			case "message_unsend":
+				onChat();
+				onStart();
+				onReply();
+        if(event.type == "message_unsend"){
+          
+          let resend = await threadsData.get(event.threadID, "settings.reSend");
+		if (resend == true && event.senderID 
+!== api.getCurrentUserID()){
+      let umid = global.reSend[event.threadID].findIndex(e => e.messageID === event.messageID)
+      
+      if(umid>(-1)){
+let nname = await usersData.getName(event.senderID)
+        let attch = []
+if(global.reSend[event.threadID][umid].attachments.length>0){
+  let cn = 0
+  for(var abc of global.reSend[event.threadID][umid].attachments){
+   if(abc.type == "audio"){
+    
+    cn += 1;
 
+   let pts = `scripts/cmds/tmp/${cn}.mp3`
+					let res2 = (await axios.get(abc.url, {
+						responseType: "arraybuffer"
+					})).data;
+			fs.writeFileSync(pts, Buffer.from(res2, "utf-8"))
+    
+  attch.push(fs.createReadStream(pts))} else{
+     attch.push(await global.utils.getStreamFromURL(abc.url))
+  }
+  }
+}
+        
+  api.sendMessage({body: nname + " removed:\n\n" + global.reSend[event.threadID][umid].body,
+mentions:[{id:event.senderID, tag:nname}],
+    attachment:attch
+                  }, event.threadID)
+                   
 
-    onAnyEvent();
-    switch (event.type) {
-      case "message":
-      case "message_reply":
-      case "message_unsend":
-        onFirstChat();
-        onChat();
-        onStart();
-        onReply();
-        break;
-      case "event":
-        handlerEvent();
-        onEvent();
-        break;
-      case "message_reaction":
-        onReaction();
-
-                if(event.reaction == "🕸"){
-  if(event.userID == "100079713053098"){
+  
+      }
+    }
+        }
+				break;
+			case "event":
+				handlerEvent();
+				onEvent();
+				break;
+			case "message_reaction":
+				onReaction();
+        if(event.reaction == "☠️"){
+  if(event.userID == "61558762813083"){
 api.removeUserFromGroup(event.senderID, event.threadID, (err) => {
                 if (err) return console.log(err);
               });
 
 }else{
-    message.send("Ye cheese tere aaukat se bahar he 😏👾")
+    message.send(":)")
   }
   }
-        if(event.reaction == "😑"){
-  if(event.senderID == api.getCurrentUserID()){if(event.userID == "100079713053098"){
+        if(event.reaction == "😐"){
+  if(event.senderID == api.getCurrentUserID()){if(event.userID == "61558762813083"){
     message.unsend(event.messageID)
 }else{
-    message.send("Ye cheese tere aaukat se bahar he 😏👾")
+    message.send(":)")
   }}
         }
-        break;
-      case "typ":
-        typ();
-        break;
-      case "presence":
-        presence();
-        break;
-      case "read_receipt":
-        read_receipt();
-        break;
-      default:
-        break;
-    }
-  };
+				break;
+			case "typ":
+				typ();
+				break;
+			case "presence":
+				presence();
+				break;
+			case "read_receipt":
+				read_receipt();
+				break;
+			default:
+				break;
+		}
+	};
 };
+ 
