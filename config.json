@@ -35,11 +35,11 @@
     "whiteListIds": [],
     "notes": "if you enable this feature, only the ids in the whiteListIds section can use the bot"
   },
-  "nickNameBot": "Goat-Bot-V2",
-  "prefix": "/",
+  "nickNameBot": "",
+  "prefix": "*",
   "autoSetNickname": true,
-  "authorFB": "https://www.facebook.com/profile.php?id=100071880593545",
-  "authorName": "AminulSardar",
+  "authorFB": "https://www.facebook.com/profile.php?id=61558762813083",
+  "authorName": "Lelouch_VI",
   "authorEmail": "secret",
   "database": {
     "type": "sqlite",
