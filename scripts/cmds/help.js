@@ -1,141 +1,200 @@
-const fs = require("fs-extra");
+const fs = require("fs");
 const path = require("path");
+
 const { getPrefix } = global.utils;
-const { commands, aliases } = global.GoatBot;
+const { commands, aliases } = global.noobCore;
+
+const CATEGORY_PER_PAGE = 10;
+const frames = ["🫐","🍏","🍈","🍇","🥑","🍐","🍒"];
+
+const mediaFolder = path.join(__dirname, "..", "help.gife");
+
+// RANDOM MEDIA
+function getRandomHelpMedia() {
+  try {
+    const files = fs.readdirSync(mediaFolder);
+    const media = files.filter(f =>
+      [".gif",".mp4",".jpg",".png",".jpeg"]
+      .includes(path.extname(f).toLowerCase())
+    );
+    if (!media.length) return null;
+    const file = media[Math.floor(Math.random() * media.length)];
+    return fs.createReadStream(path.join(mediaFolder, file));
+  } catch {
+    return null;
+  }
+}
+
+// CHUNK
+function chunkArray(arr, size) {
+  const result = [];
+  for (let i = 0; i < arr.length; i += size)
+    result.push(arr.slice(i, i + size));
+  return result;
+}
 
 module.exports = {
-	config: {
-		name: "help",
-		version: "2.5",
-		author: "Aminul Sardar (Decorated from NTKhang)",
-		countDown: 5,
-		role: 0,
-		description: {
-			en: "View all commands and usage",
-			vi: "Xem tất cả lệnh và cách dùng"
-		},
-		category: "info",
-		guide: {
-			en: "{pn} [page]\n{pn} <command name>",
-			vi: "{pn} [trang]\n{pn} <tên lệnh>"
-		}
-	},
+  config: {
+    name: "help",
+    aliases: ["menu"],
+    version: "14.0",
+    author: "NoobCore Team - ayanokoji",
+    role: 0,
+    shortDescription: "Show all commands",
+    guide: {
+      en: [
+        "{pn} → list commands by page",
+        "{pn} <page> → open specific page",
+        "{pn} <command> → command details",
+        "{pn} all → show all commands"
+      ].join("\n")
+    }
+  },
 
-	langs: {
-		en: {
-			pageNotFound: "⚠️ Page %1 does not exist.",
-			commandNotFound: "⚠️ Command \"%1\" not found.",
-			helpList:
-				"╔═════•| 💜 |•═════╗\n" +
-				" GOAT-BOT 𝐏𝐑𝐎𝐉𝐄𝐂𝐓\n" +
-				"╚═════•| 💜 |•═════╝\n\n" +
-				"📜 𝐏𝐀𝐆𝐄 %1/%2 📜\n\n" +
-				" ━❮🖤❯━━━❪🕊️❫━━━❮🩷❯━\n" +
-				"%3" +
-				" ━❮🖤❯━━━❪🕊️❫━━━❮🩷❯━\n\n" +
-				"📌 How To Make Free This Bot:\n👉 Facebook.com/100071880593545\n\n" +
-				"🅞𝐖𝐍𝐄𝐑 🅑𝐨𝐭 🙊😝\n👉 m.me/100071880593545\n\n" +
-				"━❮🖤❯━━━❪🕊️❫━━━❮🩷❯━",
+  onStart: async function({ message, args, event, role, api }) {
 
-			commandInfo:
-				"╔═════•| 📖 |•═════╗\n" +
-				"   𝐂𝐎𝐌𝐌𝐀𝐍𝐃 𝐃𝐄𝐓𝐀𝐈𝐋𝐒\n" +
-				"╚═════•| 📖 |•═════╝\n\n" +
-				"🔹 Name: %1\n" +
-				"🔹 Description: %2\n" +
-				"🔹 Role: %3\n" +
-				"🔹 Version: %4\n" +
-				"🔹 Author: %5\n\n" +
-				"💡 Usage:\n%6\n\n" +
-				"━❮🖤❯━━━❪🕊️❫━━━❮🩷❯━"
-		},
+    const prefix = getPrefix(event.threadID);
 
-		vi: {
-			pageNotFound: "⚠️ Trang %1 không tồn tại.",
-			commandNotFound: "⚠️ Lệnh \"%1\" không tồn tại.",
-			helpList:
-				"╔═════•| 💜 |•═════╗\n" +
-				" GOAT-BOT 𝐏𝐑𝐎𝐉𝐄𝐂𝐓\n" +
-				"╚═════•| 💜 |•═════╝\n\n" +
-				"📜 𝐓𝐫𝐚𝐧𝐠 %1/%2 📜\n\n" +
-				" ━❮🖤❯━━━❪🕊️❫━━━❮🩷❯━\n" +
-				"%3" +
-				" ━❮🖤❯━━━❪🕊️❫━━━❮🩷❯━\n\n" +
-				"📌 Cách tạo bot free:\n👉 Facebook.com/100071880593545\n\n" +
-				"🅞𝐖𝐍𝐄𝐑 🅑𝐨𝐭 🙊😝\n👉 m.me/100071880593545\n\n" +
-				"━❮🖤❯━━━❪🕊️❫━━━❮🩷❯━",
+    const categoryMap = {};
 
-			commandInfo:
-				"╔═════•| 📖 |•═════╗\n" +
-				"   𝐓𝐇𝐎̂𝐍𝐆 𝐓𝐈𝐍 𝐋𝐄̣̂𝐍𝐇\n" +
-				"╚═════•| 📖 |•═════╝\n\n" +
-				"🔹 Tên: %1\n" +
-				"🔹 Mô tả: %2\n" +
-				"🔹 Quyền: %3\n" +
-				"🔹 Phiên bản: %4\n" +
-				"🔹 Tác giả: %5\n\n" +
-				"💡 Cách dùng:\n%6\n\n" +
-				"━❮🖤❯━━━❪🕊️❫━━━❮🩷❯━"
-		}
-	},
+    // COLLECT COMMANDS
+    for (const [name, cmd] of commands) {
+      if (!cmd?.config) continue;
 
-	onStart: async function ({ message, args, event, threadsData, getLang, role }) {
-		const { threadID } = event;
-		const threadData = await threadsData.get(threadID);
-		const prefix = getPrefix(threadID);
+      const cmdRole = cmd.config.role || 0;
+      if (cmdRole > role) continue;
 
-		// If user requests command details
-		if (args[0]) {
-			const cmdName = args[0].toLowerCase();
-			let command = commands.get(cmdName) || commands.get(aliases.get(cmdName));
-			if (!command)
-				return message.reply(getLang("commandNotFound", args[0]));
+      const category = (cmd.config.category || "general").toLowerCase();
 
-			const cfg = command.config;
-			const usage = (cfg.guide?.en || cfg.guide || "")
-				.replace(/\{pn\}/g, prefix + cfg.name);
+      if (!categoryMap[category])
+        categoryMap[category] = [];
 
-			const roleText =
-				cfg.role == 0 ? "0 (All users)" :
-				cfg.role == 1 ? "1 (Group admin)" :
-				"2 (Bot admin)";
+      categoryMap[category].push({
+        name,
+        premium: cmd.config.premium || false
+      });
+    }
 
-			return message.reply(
-				getLang("commandInfo",
-					cfg.name,
-					cfg.description?.en || cfg.description || "No description",
-					roleText,
-					cfg.version || "1.0",
-					cfg.author || "Unknown",
-					usage || "No usage guide"
-				)
-			);
-		}
+    const categories = Object.keys(categoryMap).sort();
 
-		// Else: list commands
-		let arrayInfo = [];
-		for (const [name, value] of commands) {
-			if (value.config.role > 1 && role < value.config.role) continue;
-			arrayInfo.push(name);
-		}
-		arrayInfo.sort();
+    // HELP ALL
+    if (args[0] === "all") {
+      let msg = `🍈 Lelouch vi Britannia,s TOOL 🍈\n\n`;
 
-		// Pagination
-		const page = parseInt(args[0]) || 1;
-		const numberOfOnePage = 10;
-		const totalPage = Math.ceil(arrayInfo.length / numberOfOnePage);
-		if (page < 1 || page > totalPage)
-			return message.reply(getLang("pageNotFound", page));
+      for (const cat of categories) {
+        msg += `🫐 ${cat.toUpperCase()}\n`;
 
-		const start = (page - 1) * numberOfOnePage;
-		const end = start + numberOfOnePage;
-		const listPage = arrayInfo.slice(start, end);
+        for (const cmd of categoryMap[cat]) {
+          msg += `${cmd.premium ? "💎" : "."} ${cmd.name} `;
+        }
 
-		let textList = "";
-		listPage.forEach((cmd, index) => {
-			textList += `│ ▪ ${start + index + 1} ➩ ${cmd}\n`;
-		});
+        msg += "\n\n";
+      }
 
-		return message.reply(getLang("helpList", page, totalPage, textList));
-	}
-};
+      msg += `Total Commands: ${commands.size}`;
+
+      return message.reply({
+        body: msg,
+        attachment: getRandomHelpMedia()
+      });
+    }
+
+    // COMMAND DETAILS
+    if (args[0] && isNaN(args[0])) {
+      const query = args[0].toLowerCase();
+
+      let cmd = commands.get(query);
+      if (!cmd && aliases.has(query))
+        cmd = commands.get(aliases.get(query));
+
+      if (!cmd)
+        return message.reply("❌ Command not found.");
+
+      const cfg = cmd.config;
+
+      let guide = cfg.guide || "No guide available.";
+      if (typeof guide === "object")
+        guide = guide.en || Object.values(guide)[0] || "";
+
+      if (Array.isArray(guide))
+        guide = guide.join("\n");
+
+      guide = String(guide).replace(/{pn}/g, prefix + cfg.name);
+
+      const msg =
+`🍈 Lelouch vi Britannia, s TOOL 🍈
+
+🫐 Name: ${prefix}${cfg.name}
+🍏 Author: ${cfg.author || "Unknown"}
+🍈 Version: ${cfg.version || "1.0"}
+🍇 Role: ${cfg.role || 0}
+🥑 Cooldown: ${cfg.countDown || 5}s
+🍐 Category: ${cfg.category || "general"}
+🍒 Premium: ${cfg.premium ? "Yes 💎" : "No"}
+
+📜 Usage:
+${guide}`;
+
+      return message.reply({
+        body: msg,
+        attachment: getRandomHelpMedia()
+      });
+    }
+
+    // PAGE SYSTEM
+    const pages = chunkArray(categories, CATEGORY_PER_PAGE);
+    const totalPages = pages.length;
+
+    let page = parseInt(args[0]) || 1;
+    if (page < 1) page = 1;
+    if (page > totalPages) page = 1;
+
+    const currentCategories = pages[page - 1];
+
+    function build(frame) {
+      let msg =
+`${frame} AYANOKOJI KIYOTAKA'S PERFECT TOOL ${frame}
+━━━━━━━━━━━━━━━━━━
+🍇 BOT HELP MENU
+Page ${page}/${totalPages}
+━━━━━━━━━━━━━━━━━━
+`;
+
+      for (const cat of currentCategories) {
+        msg += `\n🫐 ${cat.toUpperCase()}\n`;
+
+        for (const cmd of categoryMap[cat]) {
+          msg += `${cmd.premium ? "💎" : "."} ${cmd.name} `;
+        }
+
+        msg += "\n";
+      }
+
+      msg += `
+━━━━━━━━━━━━━━━━━━
+🍏 Total Commands: ${commands.size}
+🍈 Use: ${prefix}help <command>
+🍇 View All: ${prefix}help all
+━━━━━━━━━━━━━━━━━━
+${frame} AYANOKOJI KIYOTAKA'S PERFECT TOOL ${frame}
+`;
+
+      return msg;
+    }
+
+    const sent = await message.reply({
+      body: build("🥑"),
+      attachment: getRandomHelpMedia()
+    });
+
+    // ANIMATION
+    let i = 0;
+    setInterval(() => {
+      try {
+        const emoji = frames[i % frames.length];
+        api.editMessage(build(emoji), sent.messageID);
+        i++;
+      } catch {}
+    }, 2000);
+  }
+}; 
