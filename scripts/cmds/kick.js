@@ -1,42 +1,52 @@
 module.exports = {
 	config: {
 		name: "kick",
-		version: "1.4",
-		author: "James Dahao",
+		version: "1.3",
+		author: "NTKhang",
 		countDown: 5,
 		role: 1,
-		description: "Kick members out of the group chat",
+		description: {
+			vi: "Kick thành viên khỏi box chat",
+			en: "Kick member out of chat box"
+		},
 		category: "box chat",
-		guide: "{pn} @tags — use to kick tagged members"
+		guide: {
+			vi: "   {pn} @tags: dùng để kick những người được tag",
+			en: "   {pn} @tags: use to kick members who are tagged"
+		}
 	},
 
-	onStart: async function ({ message, event, args, threadsData, api }) {
-		const adminIDs = await threadsData.get(event.threadID, "adminIDs");
-		if (!adminIDs.includes(event.senderID))
-			return message.reply("❌ Only group admins can use this command.");
-		if (!adminIDs.includes(api.getCurrentUserID()))
-			return message.reply("❌ Please make the bot an admin before using this command.");
+	langs: {
+		vi: {
+			needAdmin: "Vui lòng thêm quản trị viên cho bot trước khi sử dụng tính năng này"
+		},
+		en: {
+			needAdmin: "Please add admin for bot before using this feature"
+		}
+	},
 
+	onStart: async function ({ message, event, args, threadsData, api, getLang }) {
+		const adminIDs = await threadsData.get(event.threadID, "adminIDs");
+		if (!adminIDs.includes(api.getCurrentUserID()))
+			return message.reply(getLang("needAdmin"));
 		async function kickAndCheckError(uid) {
 			try {
-				const userInfo = await api.getUserInfo(uid);
-				const name = userInfo[uid]?.name || "Unknown User";
 				await api.removeUserFromGroup(uid, event.threadID);
-				message.reply(`✅ Kicked ${name} from the group.`);
-			} catch (e) {
-				message.reply("⚠️ Failed to kick user. Make sure the bot has admin rights.");
+			}
+			catch (e) {
+				message.reply(getLang("needAdmin"));
 				return "ERROR";
 			}
 		}
-
 		if (!args[0]) {
 			if (!event.messageReply)
-				return message.reply("⚠️ Please tag or reply to the user you want to kick.");
+				return message.SyntaxError();
 			await kickAndCheckError(event.messageReply.senderID);
-		} else {
+		}
+		else {
 			const uids = Object.keys(event.mentions);
 			if (uids.length === 0)
-				return message.reply("⚠️ Please mention at least one user to kick.");
+				return message.SyntaxError();
 			if (await kickAndCheckError(uids.shift()) === "ERROR")
 				return;
 			for (const uid of uids)

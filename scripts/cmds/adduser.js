@@ -5,15 +5,30 @@ module.exports = {
 	config: {
 		name: "adduser",
 		version: "1.5",
-		author: "James Dahao",
+		author: "NTKhang",
 		countDown: 5,
 		role: 1,
-		description: "Add user to your group chat",
+		description: {
+			vi: "Thêm thành viên vào box chat của bạn",
+			en: "Add user to box chat of you"
+		},
 		category: "box chat",
-		guide: "{pn} [profile link | uid]"
+		guide: {
+			en: "   {pn} [link profile | uid]"
+		}
 	},
 
 	langs: {
+		vi: {
+			alreadyInGroup: "Đã có trong nhóm",
+			successAdd: "- Đã thêm thành công %1 thành viên vào nhóm",
+			failedAdd: "- Không thể thêm %1 thành viên vào nhóm",
+			approve: "- Đã thêm %1 thành viên vào danh sách phê duyệt",
+			invalidLink: "Vui lòng nhập link facebook hợp lệ",
+			cannotGetUid: "Không thể lấy được uid của người dùng này",
+			linkNotExist: "Profile url này không tồn tại",
+			cannotAddUser: "Bot bị chặn tính năng hoặc người dùng này chặn người lạ thêm vào nhóm"
+		},
 		en: {
 			alreadyInGroup: "Already in group",
 			successAdd: "- Successfully added %1 members to the group",
@@ -31,8 +46,14 @@ module.exports = {
 		const botID = api.getCurrentUserID();
 
 		const success = [
-			{ type: "success", uids: [] },
-			{ type: "waitApproval", uids: [] }
+			{
+				type: "success",
+				uids: []
+			},
+			{
+				type: "waitApproval",
+				uids: []
+			}
 		];
 		const failed = [];
 
@@ -42,7 +63,10 @@ module.exports = {
 			if (findType)
 				findType.uids.push(item);
 			else
-				failed.push({ type: messageError, uids: [item] });
+				failed.push({
+					type: messageError,
+					uids: [item]
+				});
 		}
 
 		const regExMatchFB = /(?:https?:\/\/)?(?:www\.)?(?:facebook|fb|m\.facebook)\.(?:com|me)\/(?:(?:\w)*#!\/)?(?:pages\/)?(?:[\w\-]*\/)*([\w\-\.]+)(?:\/)?/i;
@@ -55,16 +79,18 @@ module.exports = {
 					try {
 						uid = await findUid(item);
 						break;
-					} catch (err) {
+					}
+					catch (err) {
 						if (err.name == "SlowDown" || err.name == "CannotGetData") {
 							await sleep(1000);
 							continue;
-						} else if (i == 9 || (err.name != "SlowDown" && err.name != "CannotGetData")) {
+						}
+						else if (i == 9 || (err.name != "SlowDown" && err.name != "CannotGetData")) {
 							checkErrorAndPush(
 								err.name == "InvalidLink" ? getLang('invalidLink') :
-								err.name == "CannotGetData" ? getLang('cannotGetUid') :
-								err.name == "LinkNotExist" ? getLang('linkNotExist') :
-								err.message,
+									err.name == "CannotGetData" ? getLang('cannotGetUid') :
+										err.name == "LinkNotExist" ? getLang('linkNotExist') :
+											err.message,
 								item
 							);
 							continueLoop = true;
@@ -72,7 +98,8 @@ module.exports = {
 						}
 					}
 				}
-			} else if (!isNaN(item))
+			}
+			else if (!isNaN(item))
 				uid = item;
 			else
 				continue;
@@ -82,14 +109,16 @@ module.exports = {
 
 			if (members.some(m => m.userID == uid && m.inGroup)) {
 				checkErrorAndPush(getLang("alreadyInGroup"), item);
-			} else {
+			}
+			else {
 				try {
 					await api.addUserToGroup(uid, event.threadID);
 					if (approvalMode === true && !adminIDs.includes(botID))
 						success[1].uids.push(uid);
 					else
 						success[0].uids.push(uid);
-				} catch (err) {
+				}
+				catch (err) {
 					checkErrorAndPush(getLang("cannotAddUser"), item);
 				}
 			}
