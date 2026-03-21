@@ -25,7 +25,7 @@ module.exports = {
  confirmThisThread: "🛡 React to confirm box prefix change.",
  successGlobal: "✅ Global prefix updated to: %1",
  successThisThread: "✅ This group's prefix updated to: %1",
- myPrefix: "╭━━[ REXER PREFIX INFO ]━━╮\n┃🌐 System: %1\n┃💬 Your Box: %2\n╰━━━━━━━━━━━━━━╯"
+ myPrefix: "╭━━[ PREFIX INFO ]━━╮\n┃🌐 System: %1\n┃💬 Your Box: %2\n╰━━━━━━━━━━━━━━╯"
  }
  },
 
