@@ -36,13 +36,13 @@ module.exports = {
     usePrefix: false
   },
 
-  ncStart: async function ({ api, event }) {
+   onStart: async function ({ api, event }) {
 
     const prefix = getPrefix(event.threadID);
 
     const owner = {
-      name: "AYANOKŌJI KIYOTAKA",
-      nick: "AYANOKOJI",
+      name: "LELOUCH VI BRITANNIA",
+      nick: "Lelouch",
       gender: "MALE",
       age: "18",
       height: "5'8",
